@@ -123,7 +123,7 @@ class StackMeta:
         "instance": "stack_name",
         "priority": "priority",
         "imagetag": "image_tag",
-        "configsecret": "happy_config_secret"
+        "configsecret": "happy_config_secret",
     }
 
     def __init__(self, ctx, stack_name):
@@ -197,6 +197,7 @@ class StackMeta:
 
 class Stack:
     """Represents a Happy Stack"""
+
     def __init__(self, stack_mgr, stack_name):
         self.stack_mgr = stack_mgr
         self.stack_name = stack_name
@@ -315,7 +316,7 @@ class StackMgr:
         return self.tfe_api
 
     def remove(self, stack_name):
-        self._stacks = {} # Force a refresh of stacks.
+        self._stacks = {}  # Force a refresh of stacks.
         stack_names = set(self.stacks.keys())
         stack_names.remove(stack_name)
 
@@ -325,7 +326,7 @@ class StackMgr:
         del self._stacks[stack_name]
 
     def add(self, stack_name):
-        self._stacks = {} # Force a refresh of stacks.
+        self._stacks = {}  # Force a refresh of stacks.
         stack_names = set(self.stacks.keys())
         stack_names.add(stack_name)
 
@@ -520,7 +521,7 @@ class TFEWorkspace:
             self.tfc.workspace_vars.update(self.workspace_id, self.vars[category][key]["id"], var_data)
         else:
             self.tfc.workspace_vars.create(self.workspace_id, var_data)
-    
+
     def reset_cache(self):
         self._vars = None
         self._outputs = None
@@ -597,7 +598,11 @@ class TfeApi:
 
 
 @click.group()
-@click.option("--profile", default=None, help="AWS profile to use. Explicitly passing empty string uses Boto default credentials resolver.")
+@click.option(
+    "--profile",
+    default=None,
+    help="AWS profile to use. Explicitly passing empty string uses Boto default credentials resolver.",
+)
 @click.option("--env", default=None, help="Switch happy envs")
 @click.pass_context
 def cli(ctx, profile, env):
@@ -632,7 +637,13 @@ class SecretMgr:
 
 
 def run_aws_cmd(ctx, cmd, return_output=True, json_output=True):
-    command = ["aws", "--profile", AwsSession.get_session(ctx).profile_name, "--region", AwsSession.get_config(ctx).region_name]
+    command = [
+        "aws",
+        "--profile",
+        AwsSession.get_session(ctx).profile_name,
+        "--region",
+        AwsSession.get_config(ctx).region_name,
+    ]
     command.extend(cmd)
     if return_output:
         output = subprocess.check_output(command)
@@ -680,18 +691,26 @@ class Orchestrator:
         containers = []
         for task in taskinfo:
             task_id = task["taskArn"].split("/")[-1]
-            tp.add_row([task_id, task["startedAt"].strftime('%m/%d %H:%M'), task["lastStatus"]])
-            containers.append({"host": task["containerInstanceArn"], "container": task["containers"][0]["runtimeId"], "arn": task["taskArn"]})
+            tp.add_row([task_id, task["startedAt"].strftime("%m/%d %H:%M"), task["lastStatus"]])
+            containers.append(
+                {
+                    "host": task["containerInstanceArn"],
+                    "container": task["containers"][0]["runtimeId"],
+                    "arn": task["taskArn"],
+                }
+            )
         tp.print()
         print()
         for container in containers:
-            instance_info = ecs_client.describe_container_instances(cluster=cluster_arn, containerInstances=[container["host"]])
+            instance_info = ecs_client.describe_container_instances(
+                cluster=cluster_arn, containerInstances=[container["host"]]
+            )
             ec2_instance = instance_info["containerInstances"][0]["ec2InstanceId"]
             ec2_client = AwsSession.get_client(self.ctx, "ec2")
             hostinfo = ec2_client.describe_instances(InstanceIds=[ec2_instance])
             ip = hostinfo["Reservations"][0]["Instances"][0]["PrivateIpAddress"]
             print(f"Connecting to {container['arn']}")
-            os.execvp("ssh", ["ssh", "-t", ip, "sudo", "docker", "exec", "-ti", container['container'], "/bin/bash"])
+            os.execvp("ssh", ["ssh", "-t", ip, "sudo", "docker", "exec", "-ti", container["container"], "/bin/bash"])
 
     def logs(self, stack_name, service, since):
         run_aws_cmd(
@@ -769,18 +788,15 @@ class Orchestrator:
 class ArtifactBuilder:
     """Builds artifacts such asx Docker containers. For now, this is hard coded to use docker-compose as the backend."""
 
-    DEFAULT_CONFIG = {
-        "compose_file": "docker-compose.yml",
-        "env": None
-    }
+    DEFAULT_CONFIG = {"compose_file": "docker-compose.yml", "env": None}
 
     def __init__(self, config={}):
         self.config = {**self.DEFAULT_CONFIG, **config}  # Replace defaults with the input
 
     def build(self, artifacts=None):
-        env = dict(os.environ)   # Make a copy of the current environment
-        env['DOCKER_BUILDKIT'] = "1"
-        env['COMPOSE_DOCKER_CLI_BUILD'] = "1"
+        env = dict(os.environ)  # Make a copy of the current environment
+        env["DOCKER_BUILDKIT"] = "1"
+        env["COMPOSE_DOCKER_CLI_BUILD"] = "1"
         compose_args = ["--file", self.config["compose_file"]]
         if self.config["env"]:
             compose_args += ["--env", self.config["env"]]
@@ -838,6 +854,7 @@ def shell(ctx, stack_name, service, instanceid):
     orchestrator = ctx.obj["orchestrator"]
     orchestrator.shell(stack_name, service)
 
+
 @cli.command()
 @click.argument("stack_name")
 @click.argument("service")
@@ -847,6 +864,7 @@ def logs(ctx, stack_name, service, since):
     """Tail the logs of a service (frontend, backend, upload, migrations)"""
     orchestrator = ctx.obj["orchestrator"]
     orchestrator.logs(stack_name, service, logs)
+
 
 @cli.command()
 @click.argument("stack_name")
@@ -983,7 +1001,12 @@ def list_command(ctx):
 
 @cli.command()
 @click.argument("images", nargs=-1)
-@click.option("--source-tag", help="Tag name for existing docker image. Leave empty to generate one automatically.", default=None, required=True)
+@click.option(
+    "--source-tag",
+    help="Tag name for existing docker image. Leave empty to generate one automatically.",
+    default=None,
+    required=True,
+)
 @click.option("--dest-tag", help="Extra tags to apply and push to the docker repo.", multiple=True, required=True)
 @click.pass_context
 def addtags(ctx, images, source_tag, dest_tag):
@@ -999,25 +1022,23 @@ def addtags(ctx, images, source_tag, dest_tag):
         repo_name = "/".join(repository.split("/")[1:])
 
         manifest = ecr_client.batch_get_image(
-            registryId=registry_id,
-            repositoryName=repo_name,
-            imageIds=[{'imageTag': source_tag}]
+            registryId=registry_id, repositoryName=repo_name, imageIds=[{"imageTag": source_tag}]
         )
         manifest = manifest["images"][0]["imageManifest"]
         for tag in dest_tag:
             try:
                 ecr_client.put_image(
-                    registryId=registry_id,
-                    repositoryName=repo_name,
-                    imageManifest=manifest,
-                    imageTag=tag
+                    registryId=registry_id, repositoryName=repo_name, imageManifest=manifest, imageTag=tag
                 )
             except ecr_client.exceptions.ImageAlreadyExistsException:
                 print(f"tag {tag} already exists, skipping.")
 
+
 @cli.command()
 @click.argument("images", nargs=-1, default=None)
-@click.option("--tag", help="Tag name for existing docker image. Leave empty to generate one automatically.", default=None)
+@click.option(
+    "--tag", help="Tag name for existing docker image. Leave empty to generate one automatically.", default=None
+)
 @click.option("--extra-tag", help="Extra tags to apply and push to the docker repo.", multiple=True)
 @click.option("--compose-env", help="Environment file to pass to docker compose", default=None)
 @click.pass_context
@@ -1046,9 +1067,9 @@ def push(ctx, images, tag, extra_tag, compose_env):
     first_registry = first_repo.split("/")[0]
 
     # Equivalent to aws get-login-password
-    auth = ecr_client.get_authorization_token()['authorizationData'][0]
-    auth_token = b64decode(auth['authorizationToken']).decode()
-    pwd = auth_token.split(':')[1].encode()
+    auth = ecr_client.get_authorization_token()["authorizationData"][0]
+    auth_token = b64decode(auth["authorizationToken"]).decode()
+    pwd = auth_token.split(":")[1].encode()
     cmd = subprocess.run(["docker", "login", "--username", "AWS", "--password-stdin", first_registry], input=pwd)
 
     # extra_tag is a tuple
@@ -1085,7 +1106,9 @@ if __name__ == "__main__":
     try:
         cli.main(obj=obj)
     except exceptions.TFCHTTPUnauthorized as err:
-        print(f"Not authorized to access TFE. Try going to {obj['secret_mgr'].secrets['tfe_url']} in your browser then rerunning your command.")
+        print(
+            f"Not authorized to access TFE. Try going to {obj['secret_mgr'].secrets['tfe_url']} in your browser then rerunning your command."
+        )
     except CliError as err:
         print(f"ERROR: {err}")
         exit(1)
