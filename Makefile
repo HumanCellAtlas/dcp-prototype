@@ -88,7 +88,7 @@ local-status: ## Show the status of the containers in the dev environment.
 .PHONY: local-sync
 local-sync: local-init .env.ecr ## Re-sync the local-environment state after modifying library deps or docker configs
 	docker-compose $(COMPOSE_OPTS) build --build-arg frontend backend
-	docker-compose $(COMPOSE_OPTS) up -d
+	docker-compose $(COMPOSE_OPTS) up -d frontend backend database oidc localstack
 
 .PHONY: local-start
 local-start: .env.ecr ## Start a local dev environment that's been stopped.

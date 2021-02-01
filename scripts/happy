@@ -777,7 +777,7 @@ class ArtifactBuilder:
     def __init__(self, config={}):
         self.config = {**self.DEFAULT_CONFIG, **config}  # Replace defaults with the input
 
-    def build(self):
+    def build(self, artifacts=None):
         env = dict(os.environ)   # Make a copy of the current environment
         env['DOCKER_BUILDKIT'] = "1"
         env['COMPOSE_DOCKER_CLI_BUILD'] = "1"
@@ -785,6 +785,8 @@ class ArtifactBuilder:
         if self.config["env"]:
             compose_args += ["--env", self.config["env"]]
         cmd = ["docker-compose"] + compose_args + ["build"]
+        if artifacts:
+            cmd += artifacts
         subprocess.check_call(cmd, env=env)
 
         cmd = ["docker-compose"] + compose_args + ["config"]
@@ -793,6 +795,8 @@ class ArtifactBuilder:
         images = {}
         for service_name, service in result["services"].items():
             if "build" in service:
+                if artifacts and service_name not in artifacts:
+                    continue
                 images[service_name] = service["image"]
         return images
 
@@ -978,12 +982,21 @@ def list_command(ctx):
 
 
 @cli.command()
+@click.argument("images", nargs=-1)
+@click.option("--source-tag", help="Tag name for existing docker image. Leave empty to generate one automatically.", default=None, required=True)
+@click.option("--dest-tag", help="Extra tags to apply and push to the docker repo.", multiple=True, required=True)
+@click.pass_context
+def addtags(ctx, images, source_tag, dest_tag):
+    pass
+
+@cli.command()
+@click.argument("images", nargs=-1, default=None)
 @click.option("--tag", help="Tag name for existing docker image. Leave empty to generate one automatically.", default=None)
 @click.option("--extra-tag", help="Extra tags to apply and push to the docker repo.", multiple=True)
 @click.option("--compose-env", help="Environment file to pass to docker compose", default=None)
 @click.pass_context
-def push(ctx, tag, extra_tag, compose_env):
-    """Build and push docker images to ECR"""
+def push(ctx, images, tag, extra_tag, compose_env):
+    """Build and push docker images to ECR. Optionally filter by service name"""
     config = ctx.obj["config"]
     artifact_map = config.artifact_map
     ecr_client = AwsSession.get_client(ctx, "ecr")
@@ -995,7 +1008,7 @@ def push(ctx, tag, extra_tag, compose_env):
     if compose_env:
         builder_config["env"] = compose_env
     builder = ArtifactBuilder(builder_config)
-    artifacts = builder.build()
+    artifacts = builder.build(images)
 
     print("logging in to ECR...")
     # Assumption: All the ECR registries are within the same AWS account as the one configured
@@ -1016,11 +1029,15 @@ def push(ctx, tag, extra_tag, compose_env):
     all_tags = [tag] + (list(extra_tag) or [])
     print("Tagging images...")
     for artifact_id, registry in artifact_map.items():
+        if images and artifact_id not in images:
+            continue
         image = artifacts[artifact_id]
         for current_tag in all_tags:
             subprocess.check_call(["docker", "tag", f"{image}:latest", f"{registry}:{current_tag}"])
     print("Pushing images...")
     for registry in artifact_map.values():
+        if images and artifact_id not in images:
+            continue
         for current_tag in all_tags:
             subprocess.check_call(["docker", "push", f"{registry}:{current_tag}"])
     print(f"Built and pushed docker images with tags: {all_tags}")

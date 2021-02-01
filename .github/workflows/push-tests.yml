@@ -70,6 +70,35 @@ jobs:
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           make local-sync
           make local-smoke-test
+          scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} frontend backend
+
+  build-extra-images:
+    runs-on: ubuntu-20.04
+    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/happy/cicd-2'
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 900
+      - name: Login to ECR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.ECR_REPO }}
+      - uses: actions/checkout@v2
+      - name: Docker build, push, and tag
+        env:
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+        shell: bash
+        run: |
+          echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
+          pip install -r .happy/requirements.txt
+          scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} upload_failures processing
+          docker image list
 
   unit-test:
     runs-on: ubuntu-20.04
@@ -125,5 +154,6 @@ jobs:
         run: |
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           pip install -r .happy/requirements.txt
-          scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} --extra-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g') --extra-tag ci
+          # TODO - need to add additional tags
+          echo scripts/happy addtags sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
           docker image list
