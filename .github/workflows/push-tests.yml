@@ -145,11 +145,11 @@ jobs:
           scripts/happy --profile="" addtags --source-tag sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
 
   push-upload-image:
-    needs:
-      - unit-test
-      - smoke-test
-      - lint
-      - build-extra-images
+    #needs:
+    #  - unit-test
+    #  - smoke-test
+    #  - lint
+    #  - build-extra-images
     runs-on: ubuntu-20.04
     # if: github.ref == 'refs/heads/main'
     if: github.ref == 'refs/heads/happy/cicd-2'
@@ -178,3 +178,4 @@ jobs:
           for tag in branch-main sha-${GITHUB_SHA:0:8}; do
               docker tag ${ECR_REPO}/corpora-upload:sha-${GITHUB_SHA:0:8} ${UPLOAD_ECR}/corpora-upload-dev:${tag}
               docker push ${UPLOAD_ECR}/corpora-upload-dev:${tag}
+          done
