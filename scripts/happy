@@ -1034,8 +1034,8 @@ def push(ctx, images, tag, extra_tag, compose_env):
         image = artifacts[artifact_id]
         for current_tag in all_tags:
             subprocess.check_call(["docker", "tag", f"{image}:latest", f"{registry}:{current_tag}"])
-    print("Pushing images...")
-    for registry in artifact_map.values():
+    print(f"Pushing images...{images}")
+    for artifact_id, registry in artifact_map.items():
         if images and artifact_id not in images:
             continue
         for current_tag in all_tags:

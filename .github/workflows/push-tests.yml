@@ -70,6 +70,7 @@ jobs:
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           make local-sync
           make local-smoke-test
+          pip install -r .happy/requirements.txt
           scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} frontend backend
 
   build-extra-images:
