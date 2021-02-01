@@ -159,3 +159,41 @@ jobs:
           # TODO - need to add additional tags
           echo scripts/happy addtags sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
           docker image list
+
+  push-upload-image:
+    needs:
+      - unit-test
+      - smoke-test
+      - lint
+      - build-extra-images
+    runs-on: ubuntu-20.04
+    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/happy/cicd-2'
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 900
+      - name: Login to ECR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.ECR_REPO }}
+      - name: Login to Upload ECR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.UPLOAD_ECR }}
+      - uses: actions/checkout@v2
+      - name: Docker build, push, and tag
+        env:
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          UPLOAD_ECR: ${{ secrets.ECR_REPO }}
+        shell: bash
+        run: |
+          docker pull ${ECR_REPO}/corpora-upload:sha-${GITHUB_SHA:0:8}
+          for tag in branch-main sha-${GITHUB_SHA:0:8}; do
+              docker tag ${ECR_REPO}/corpora-upload:sha-${GITHUB_SHA:0:8} ${UPLOAD_ECR}/corpora-upload-dev:${tag}
+              docker push ${UPLOAD_ECR}/corpora-upload-dev:${tag}
