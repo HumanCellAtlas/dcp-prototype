@@ -66,7 +66,6 @@ jobs:
         env:
           ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
-          docker image list
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           make local-sync
           make local-smoke-test
@@ -105,7 +104,6 @@ jobs:
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           pip install -r .happy/requirements.txt
           scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} upload_failures processing
-          docker image list
 
   unit-test:
     runs-on: ubuntu-20.04
@@ -127,7 +125,6 @@ jobs:
         env:
           ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
-          docker image list
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           make local-sync
           make local-unit-test
@@ -162,9 +159,7 @@ jobs:
         run: |
           echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           pip install -r .happy/requirements.txt
-          # TODO - need to add additional tags
-          echo scripts/happy addtags sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
-          docker image list
+          scripts/happy addtags sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
 
   push-upload-image:
     needs:
