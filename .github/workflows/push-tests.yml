@@ -70,11 +70,11 @@ jobs:
       - name: Push images
         if: github.ref == 'refs/heads/happy/cicd-2'
         env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
+          DOCKER_REPO: ${{ secrets.ECR_REPO }}
         # if: github.ref == 'refs/heads/main'
         run: |
           pip install -r .happy/requirements.txt
-          scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} frontend backend
+          scripts/happy --profile="" push --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} frontend backend
 
   build-extra-images:
     runs-on: ubuntu-20.04
@@ -96,12 +96,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Docker build, push, and tag
         env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
+          DOCKER_REPO: ${{ secrets.ECR_REPO }}
         shell: bash
         run: |
-          echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           pip install -r .happy/requirements.txt
-          scripts/happy --profile="" push  --compose-env .env.ecr --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} upload_failures processing
+          scripts/happy --profile="" push --extra-tag sha-${GITHUB_SHA:0:8} --extra-tag build-${GITHUB_RUN_NUMBER} upload_failures processing
 
   unit-test:
     runs-on: ubuntu-20.04
@@ -151,13 +150,10 @@ jobs:
           registry: ${{ secrets.ECR_REPO }}
       - uses: actions/checkout@v2
       - name: Docker build, push, and tag
-        env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
         shell: bash
         run: |
-          echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
           pip install -r .happy/requirements.txt
-          scripts/happy addtags --source-tag sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
+          scripts/happy addtags --profile="" --source-tag sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
 
   push-upload-image:
     needs:
