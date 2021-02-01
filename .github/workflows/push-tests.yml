@@ -142,7 +142,7 @@ jobs:
         shell: bash
         run: |
           pip install -r .happy/requirements.txt
-          scripts/happy addtags --profile="" --source-tag sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
+          scripts/happy --profile="" addtags --source-tag sha-${GITHUB_SHA:0:8} --dest-tag branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\+\/]/-/g')
 
   push-upload-image:
     needs:
