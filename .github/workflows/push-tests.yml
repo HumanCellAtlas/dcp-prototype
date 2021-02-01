@@ -15,6 +15,7 @@ env:
   # is written/read to allow us to use layers of previous builds as cache.
   DOCKER_BUILDKIT: 1
   COMPOSE_DOCKER_CLI_BUILD: 1
+  DOCKER_REPO: ${{ secrets.ECR_REPO }}/
 
 jobs:
   lint:
@@ -34,13 +35,9 @@ jobs:
           registry: ${{ secrets.ECR_REPO }}
       - uses: actions/checkout@v2
       - name: Lint Python
-        env:
-          DOCKER_REPO: ${{ secrets.ECR_REPO }}/
         run: |
           docker-compose run --no-deps --rm backend make -C /corpora-data-portal lint
       - name: Lint frontend
-        env:
-          DOCKER_REPO: ${{ secrets.ECR_REPO }}/
         run: |
           docker-compose run --no-deps --rm frontend make local-lint
 
@@ -61,16 +58,12 @@ jobs:
           registry: ${{ secrets.ECR_REPO }}
       - uses: actions/checkout@v2
       - name: Run tests in docker-compose
-        env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
-          echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
+          echo "DOCKER_REPO=${DOCKER_REPO}" > .env.ecr
           make local-sync
           make local-smoke-test
       - name: Push images
         if: github.ref == 'refs/heads/happy/cicd-2'
-        env:
-          DOCKER_REPO: ${{ secrets.ECR_REPO }}
         # if: github.ref == 'refs/heads/main'
         run: |
           pip install -r .happy/requirements.txt
@@ -95,8 +88,6 @@ jobs:
           registry: ${{ secrets.ECR_REPO }}
       - uses: actions/checkout@v2
       - name: Docker build, push, and tag
-        env:
-          DOCKER_REPO: ${{ secrets.ECR_REPO }}
         shell: bash
         run: |
           pip install -r .happy/requirements.txt
@@ -119,10 +110,8 @@ jobs:
           registry: ${{ secrets.ECR_REPO }}
       - uses: actions/checkout@v2
       - name: Run tests in docker-compose
-        env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
-          echo "DOCKER_REPO=${ECR_REPO}/" > .env.ecr
+          echo "DOCKER_REPO=${DOCKER_REPO}" > .env.ecr
           make local-sync
           make local-unit-test
 
