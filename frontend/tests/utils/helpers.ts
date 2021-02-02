@@ -3,7 +3,7 @@ export async function goToPage(url: string) {
 }
 
 export async function tryUntil(assert: () => void) {
-  const MAX_RETRY = 10;
+  const MAX_RETRY = 20;
   const WAIT_FOR_MS = 200;
 
   let retry = 0;
