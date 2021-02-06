@@ -8,6 +8,10 @@
         "rdev": {
             "aws_profile": "single-cell-dev",
             "secret_arn": "happy/dp-rdev-config"
+        },
+        "stage": {
+            "aws_profile": "single-cell-dev",
+            "secret_arn": "happy/env-stage-config"
         }
     },
     "artifact_map": {
