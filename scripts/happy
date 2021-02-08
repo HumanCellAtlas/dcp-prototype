@@ -31,21 +31,14 @@ class HappyConfig:
     def __init__(self, config_file=".happy/config.json", env=None, substitutions=None, ctx=None):
         self.ctx = ctx
         with open(config_file) as f:
-            self._data_text = f.read()
+            self._data = json.load(f)
         self.env = env
-        self.load_data(substitutions)
+        self.set_env()
         try:
             if self.config_version != "v1":
                 raise CliError(f'Config file {config_file} has invalid version number. Only version "v1" supported.')
         except KeyError:
             raise CliError(f"Config file {config_file} missing config_version field.")
-
-    def load_data(self, substitutions=None):
-        if substitutions:
-            self._data = json.loads(Template(self._data_text).safe_substitute(substitutions))
-        else:
-            self._data = json.loads(self._data_text)
-        self.set_env()
 
     def set_env(self):
         env_override = self.env
@@ -63,17 +56,10 @@ class HappyConfig:
             error = f'Invalid environment: "{env}". Check .happy/config for valid environments'
             raise CliError(error)
 
-    def load_artifact_map(self):
-        if self._data.get("artifact_map_loaded"):
-            return True
-        substitutions = self.ctx.obj["secret_mgr"].secrets
-        self._data["artifact_map_loaded"] = True
-        self.load_data(substitutions)
-
     def __getattr__(self, field):
+        if field == "ecrs":
+            return self.ctx.obj["secret_mgr"].secrets["ecrs"]
         if field in self._data:
-            if field == "artifact_map":
-                self.load_artifact_map()
             return self._data[field]
         return self.__dict__[field]
 
@@ -209,7 +195,10 @@ class Stack:
     def workspace(self):
         # If the corresponding workspace is missing from TFE, we will intentionally return None
         if not self._workspace:
-            self._workspace = self.stack_mgr.get_stack_workspace(self.stack_name)
+            try:
+                self._workspace = self.stack_mgr.get_stack_workspace(self.stack_name)
+            except exceptions.TFCHTTPNotFound:
+                pass
         return self._workspace
 
     @property
@@ -312,7 +301,7 @@ class StackMgr:
     def get_tfe_api(self):
         if not self.tfe_api:
             secrets = self.ctx.obj["secret_mgr"].secrets
-            self.tfe_api = TfeApi(secrets["tfe_url"], secrets["tfe_org"])
+            self.tfe_api = TfeApi(secrets["tfe"]["url"], secrets["tfe"]["org"])
         return self.tfe_api
 
     def remove(self, stack_name):
@@ -368,6 +357,7 @@ class StackMgr:
     def get_stack_workspace(self, stack_name):
         workspace_name = f"{self.config.env}-{stack_name}"
         tfe_api = self.get_tfe_api()
+        print(workspace_name)
         return tfe_api.get_workspace(workspace_name)
 
 
@@ -822,17 +812,17 @@ class ArtifactBuilder:
                 images[service_name] = service["image"]
         return images
 
-    def push(self, artifact_map, images, tags):
+    def push(self, ecrs, images, tags):
         print("Tagging images...")
         env = self.get_env()
-        for artifact_id, registry in artifact_map.items():
+        for artifact_id, registry in ecrs.items():
             if images and artifact_id not in images:
                 continue
             image = images[artifact_id]
             for current_tag in tags:
                 subprocess.check_call(["docker", "tag", f"{image}:latest", f"{registry}:{current_tag}"], env=env)
         print(f"Pushing images...{images}")
-        for artifact_id, registry in artifact_map.items():
+        for artifact_id, registry in ecrs.items():
             if images and artifact_id not in images:
                 continue
             for current_tag in tags:
@@ -892,12 +882,16 @@ def logs(ctx, stack_name, service, since):
 @click.argument("stack_name")
 @click.option("--tag", help="Tag name for docker image. Leave empty to generate one automatically.", default=None)
 @click.option("--wait/--no-wait", is_flag=True, default=True, help="wait for this to complete")
+@click.option("--force", is_flag=True, default=False, help="Ignore already-exists errors")
 @click.pass_context
-def create(ctx, stack_name, tag, wait):
-    """Create a dev stack with a given tag"""
+def create(ctx, stack_name, tag, wait, force):
+    """Create a new stack with a given tag"""
     stackmgr = ctx.obj["stack_mgr"]
     if stack_name in stackmgr.stacks:
-        raise CliError(f"Stack {stack_name} already exists")
+        if force:
+            print(f"Stack {stack_name} already exists")
+        else:
+            raise CliError(f"Stack {stack_name} already exists")
 
     stack_meta = StackMeta(ctx, stack_name)
     stack_meta.load({"happy/meta/configsecret": ctx.obj["config"].secret_arn})
@@ -1034,9 +1028,9 @@ def list_command(ctx):
 def addtags(ctx, images, source_tag, dest_tag):
     """Add additional tags to already-pushed images in the ECR repo"""
     config = ctx.obj["config"]
-    artifact_map = config.artifact_map
+    ecrs = config.ecrs
     ecr_client = AwsSession.get_client(ctx, "ecr")
-    for image_name, repository in artifact_map.items():
+    for image_name, repository in ecrs.items():
         if images and image_name not in images:
             continue
         print(f"retagging {image_name} from {source_tag} to {', '.join(dest_tag)}")
@@ -1061,8 +1055,8 @@ def get_ecr_repo(config):
     # TODO(mbarrien): Ensure this is true, print an error if not.
     # TODO(mbarrien): If correct account and wrong region, create an ecr_client with config
     # for the correct region, and login to that.
-    artifact_map = config.artifact_map
-    first_repo = next(iter(artifact_map.values()))
+    ecrs = config.ecrs
+    first_repo = next(iter(ecrs.values()))
     first_registry = first_repo.split("/")[0]
     return first_registry
 
@@ -1078,7 +1072,7 @@ def get_ecr_repo(config):
 def push(ctx, images, tag, extra_tag, compose_env):
     """Build and push docker images to ECR. Optionally filter by service name"""
     config = ctx.obj["config"]
-    artifact_map = config.artifact_map
+    ecrs = config.ecrs
     ecr_client = AwsSession.get_client(ctx, "ecr")
 
     # Equivalent to aws get-login-password
@@ -1106,7 +1100,7 @@ def push(ctx, images, tag, extra_tag, compose_env):
     all_tags = [tag] + (list(extra_tag) or [])
     print("Pushing images...")
     all_tags = [tag] + (list(extra_tag) or [])
-    builder.push(artifact_map, artifacts, all_tags)
+    builder.push(ecrs, artifacts, all_tags)
     print(f"Built and pushed docker images with tags: {all_tags}")
 
 

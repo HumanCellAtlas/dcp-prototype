@@ -1,24 +1,20 @@
 {
     "config_version": "v1",
     "terraform_version": "0.13.3",
-    "terraform_directory": ".happy/terraform/modules/ecs-service",
     "default_env": "rdev",
     "app": "data-portal",
     "environments": {
         "rdev": {
             "aws_profile": "single-cell-dev",
-            "secret_arn": "happy/dp-rdev-config"
+            "secret_arn": "happy/dp-rdev-config",
+            "terraform_directory": ".happy/terraform/envs/rdev"
         },
         "stage": {
             "aws_profile": "single-cell-dev",
-            "secret_arn": "happy/env-stage-config"
+            "secret_arn": "happy/env-stage-config",
+	    "protected": true,
+            "terraform_directory": ".happy/terraform/envs/stage"
         }
-    },
-    "artifact_map": {
-        "frontend": "${frontend_ecr}",
-        "backend": "${backend_ecr}",
-        "processing": "${upload_ecr}",
-        "upload_failures": "${upload_failures_ecr}"
     },
     "tasks": {
         "migrate": ["migrate_db_task_definition_arn"],
