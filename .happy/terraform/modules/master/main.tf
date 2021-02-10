@@ -1,4 +1,4 @@
-# This deploys a dev stack.
+# This deploys a Data Portal stack.
 # 
 module frontend_dns {
   source                = "../dns"
