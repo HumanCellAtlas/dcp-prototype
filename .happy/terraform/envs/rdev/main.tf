@@ -1,5 +1,5 @@
 module stack {
-  source              = "../modules/ecs_stack/"
+  source              = "./modules/ecs-stack/"
   account_id          = var.account_id
   aws_role            = var.aws_role
   happymeta_          = var.happymeta_

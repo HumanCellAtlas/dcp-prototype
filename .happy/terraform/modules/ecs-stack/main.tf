@@ -8,7 +8,6 @@ data aws_secretsmanager_secret_version config {
 locals {
   secret = jsondecode(data.aws_secretsmanager_secret_version.config.secret_string)
 
-  source                = "../master"
   custom_stack_name     = var.stack_name
   image_tag             = var.image_tag
   priority              = var.priority
@@ -43,9 +42,9 @@ locals {
   artifact_bucket       = try(local.secret["s3_buckets"]["artifacts"]["name"], "")
   cellxgene_bucket      = try(local.secret["s3_buckets"]["cellxgene"]["name"], "")
 
-  task_role_arn         = local.secret["task_role_arn"]
-  sfn_role_arn          = local.secret["sfn_role_arn"]
-  lambda_execution_role = local.secret["lambda_execution_role"]
+  ecs_role_arn          = local.secret["service_roles"]["ecs_role"]
+  sfn_role_arn          = local.secret["service_roles"]["sfn_upload"]
+  lambda_execution_role = local.secret["service_roles"]["lambda_errorhandler"]
 }
 
 module frontend_dns {
@@ -79,7 +78,7 @@ module frontend_service {
   listener          = local.frontend_listener_arn
   subnets           = local.subnets
   security_groups   = local.security_groups
-  task_role_arn     = local.task_role_arn
+  task_role_arn     = local.ecs_role_arn
   service_port      = 9000
   deployment_stage  = local.deployment_stage
   step_function_arn = module.upload_sfn.step_function_arn
@@ -100,7 +99,7 @@ module backend_service {
   listener          = local.backend_listener_arn
   subnets           = local.subnets
   security_groups   = local.security_groups
-  task_role_arn     = local.task_role_arn
+  task_role_arn     = local.ecs_role_arn
   service_port      = 5000
   cmd               = local.backend_cmd
   deployment_stage  = local.deployment_stage
@@ -114,7 +113,7 @@ module backend_service {
 module migrate_db {
   source            = "../migration"
   image             = "${local.backend_image_repo}:${local.image_tag}"
-  task_role_arn     = local.task_role_arn
+  task_role_arn     = local.ecs_role_arn
   cmd               = local.migration_cmd
   custom_stack_name = local.custom_stack_name
   deployment_stage  = local.deployment_stage
@@ -125,7 +124,7 @@ module delete_db {
   count             = var.delete_protected ? 0 : 1
   source            = "../deletion"
   image             = "${local.backend_image_repo}:${local.image_tag}"
-  task_role_arn     = local.task_role_arn
+  task_role_arn     = local.ecs_role_arn
   cmd               = local.deletion_cmd
   custom_stack_name = local.custom_stack_name
   deployment_stage  = local.deployment_stage

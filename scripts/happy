@@ -820,13 +820,13 @@ class ArtifactBuilder:
                 continue
             image = images[artifact_id]
             for current_tag in tags:
-                subprocess.check_call(["docker", "tag", f"{image}:latest", f"{registry}:{current_tag}"], env=env)
+                subprocess.check_call(["docker", "tag", f"{image}:latest", f"{registry['url']}:{current_tag}"], env=env)
         print(f"Pushing images...{images}")
         for artifact_id, registry in ecrs.items():
             if images and artifact_id not in images:
                 continue
             for current_tag in tags:
-                subprocess.check_call(["docker", "push", f"{registry}:{current_tag}"], env=env)
+                subprocess.check_call(["docker", "push", f"{registry['url']}:{current_tag}"], env=env)
 
 
 def run_tasks(ctx, stack, task_type, wait=False, show_logs=True):
@@ -915,7 +915,7 @@ def config_tarball(source_dir):
     """Create a config tarball from given source_dir, then automatically delete it once we're done."""
     targz_file = tempfile.NamedTemporaryFile(delete=False)
     try:
-        with tarfile.open(fileobj=targz_file, mode="w:gz") as tar:
+        with tarfile.open(fileobj=targz_file, mode="w:gz", dereference=True) as tar:
             tar.add(source_dir, arcname="")
         with targz_file:
             yield targz_file
@@ -1034,8 +1034,8 @@ def addtags(ctx, images, source_tag, dest_tag):
         if images and image_name not in images:
             continue
         print(f"retagging {image_name} from {source_tag} to {', '.join(dest_tag)}")
-        registry_id = repository.split(".")[0]
-        repo_name = "/".join(repository.split("/")[1:])
+        registry_id = repository["url"].split(".")[0]
+        repo_name = "/".join(repository["url"].split("/")[1:])
 
         manifest = ecr_client.batch_get_image(
             registryId=registry_id, repositoryName=repo_name, imageIds=[{"imageTag": source_tag}]
@@ -1057,7 +1057,7 @@ def get_ecr_repo(config):
     # for the correct region, and login to that.
     ecrs = config.ecrs
     first_repo = next(iter(ecrs.values()))
-    first_registry = first_repo.split("/")[0]
+    first_registry = first_repo["url"].split("/")[0]
     return first_registry
 
 

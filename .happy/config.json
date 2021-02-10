@@ -6,7 +6,7 @@
     "environments": {
         "rdev": {
             "aws_profile": "single-cell-dev",
-            "secret_arn": "happy/dp-rdev-config",
+            "secret_arn": "happy/env-rdev-config",
             "terraform_directory": ".happy/terraform/envs/rdev"
         },
         "stage": {
