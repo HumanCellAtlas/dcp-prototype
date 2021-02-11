@@ -103,6 +103,7 @@ resource aws_lb_target_group target_group {
 }
 
 resource aws_lb_listener_rule listener_rule {
+  count        = length(var.listener) == 0 ? 0 : 1
   listener_arn = var.listener
   priority     = var.priority
   condition {

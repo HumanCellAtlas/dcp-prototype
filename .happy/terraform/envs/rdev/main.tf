@@ -8,5 +8,6 @@ module stack {
   priority            = var.priority
   stack_name          = var.stack_name
   deployment_stage    = "rdev"
+  delete_protected    = false
   require_okta        = true
 }

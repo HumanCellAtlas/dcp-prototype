@@ -714,7 +714,7 @@ class Orchestrator:
         """Run a one-off ECS task and optionally wait"""
         secrets = self.secrets
         cluster_arn = secrets["cluster_arn"]
-        subnets = secrets["subnets"]
+        subnets = secrets["private_subnets"]
         security_groups = secrets["security_groups"]
         print(f"Using task definition {taskdef_arn}")
         ecs_client = AwsSession.get_client(self.ctx, "ecs")

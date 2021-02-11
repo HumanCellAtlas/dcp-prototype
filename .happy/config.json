@@ -12,7 +12,6 @@
         "stage": {
             "aws_profile": "single-cell-dev",
             "secret_arn": "happy/env-stage-config",
-	    "protected": true,
             "terraform_directory": ".happy/terraform/envs/stage"
         }
     },

@@ -46,6 +46,9 @@ locals {
   ecs_role_arn          = local.secret["service_roles"]["ecs_role"]
   sfn_role_arn          = local.secret["service_roles"]["sfn_upload"]
   lambda_execution_role = local.secret["service_roles"]["lambda_errorhandler"]
+
+  frontend_url = try(join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns]), "")
+  backend_url  = try(join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns]), "")
 }
 
 module frontend_dns {
@@ -83,10 +86,10 @@ module frontend_service {
   service_port      = 9000
   deployment_stage  = local.deployment_stage
   step_function_arn = module.upload_sfn.step_function_arn
-  host_match        = join(".", [module.frontend_dns[0].dns_prefix, local.external_dns])
+  host_match        = try(join(".", [module.frontend_dns[0].dns_prefix, local.external_dns]), "")
   priority          = local.priority
-  api_url           = join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns])
-  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
+  api_url           = local.backend_url
+  frontend_url      = local.frontend_url
 }
 
 module backend_service {
@@ -105,10 +108,10 @@ module backend_service {
   cmd               = local.backend_cmd
   deployment_stage  = local.deployment_stage
   step_function_arn = module.upload_sfn.step_function_arn
-  host_match        = join(".", [module.backend_dns[0].dns_prefix, local.external_dns])
+  host_match        = try(join(".", [module.backend_dns[0].dns_prefix, local.external_dns]), "")
   priority          = local.priority
-  api_url           = join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns])
-  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
+  api_url           = local.backend_url
+  frontend_url      = local.frontend_url
 }
 
 module migrate_db {
@@ -140,7 +143,7 @@ module upload_batch {
   deployment_stage  = local.deployment_stage
   artifact_bucket   = local.artifact_bucket
   cellxgene_bucket  = local.cellxgene_bucket
-  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
+  frontend_url      = local.frontend_url
 }
 
 module upload_lambda {

@@ -1,6 +1,6 @@
 module stack {
-  source              = "./modules/ecs-stack/"
-  account_id          = var.account_id
+  source              = "./modules/ecs-stack"
+  aws_account_id      = var.aws_account_id
   aws_role            = var.aws_role
   happymeta_          = var.happymeta_
   happy_config_secret = var.happy_config_secret
