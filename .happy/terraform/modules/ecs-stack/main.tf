@@ -13,24 +13,25 @@ locals {
   priority              = var.priority
   deployment_stage      = var.deployment_stage
 
-  migration_cmd         = "make,-C,/corpora-data-portal/backend,db/init_remote_dev"
-  deletion_cmd          = "make,-C,/corpora-data-portal/backend,db/delete_remote_dev"
-  frontend_cmd          = ""
-  backend_cmd           = "python3,/chalice/run_local_server.py,--host,0.0.0.0"
-  data_load_path        = "s3://${local.secret["env_s3_bucket"]}/database/dev_data.sql"
+  migration_cmd         = ["make", "-C", "/corpora-data-portal/backend,db/init_remote_dev"]
+  deletion_cmd          = ["make", "-C", "/corpora-data-portal/backend,db/delete_remote_dev"]
+  frontend_cmd          = []
+  backend_cmd           = ["python3", "/chalice/run_local_server.py", "--host", "0.0.0.0"]
+  data_load_path        = "s3://${local.secret["s3_buckets"]["env"]["name"]}/database/dev_data.sql"
 
   vpc_id                = local.secret["vpc_id"]
   subnets               = var.require_okta ? local.secret["private_subnets"] : local.secret["public_subnets"]
   security_groups       = local.secret["security_groups"]
   zone                  = local.secret["zone_id"]
   cluster               = local.secret["cluster_arn"]
-  frontend_image_repo   = local.secret["ecrs"]["frontend"]
-  backend_image_repo    = local.secret["ecrs"]["backend"]
-  upload_image_repo     = local.secret["ecrs"]["processing"]
-  lambda_upload_repo    = local.secret["ecrs"]["upload_failures"]
+  frontend_image_repo   = local.secret["ecrs"]["frontend"]["url"]
+  backend_image_repo    = local.secret["ecrs"]["backend"]["url"]
+  upload_image_repo     = local.secret["ecrs"]["processing"]["url"]
+  lambda_upload_repo    = local.secret["ecrs"]["upload_failures"]["url"]
   batch_role_arn        = local.secret["batch_queues"]["upload"]["role_arn"]
   job_queue_arn         = local.secret["batch_queues"]["upload"]["queue_arn"]
   external_dns          = local.secret["external_zone_name"]
+  internal_dns          = local.secret["internal_zone_name"]
 
   frontend_listener_arn = try(local.secret["alb_listeners"]["frontend"]["arn"], "")
   backend_listener_arn  = try(local.secret["alb_listeners"]["backend"]["arn"], "")
@@ -52,9 +53,9 @@ module frontend_dns {
   source                = "../dns"
   custom_stack_name     = local.custom_stack_name
   app_name              = "frontend"
-  alb_dns               = var.frontend_alb_dns
-  canonical_hosted_zone = var.frontend_alb_zone
-  zone                  = var.zone
+  alb_dns               = local.frontend_alb_dns
+  canonical_hosted_zone = local.frontend_alb_zone
+  zone                  = local.internal_dns
 }
 
 module backend_dns {
@@ -62,9 +63,9 @@ module backend_dns {
   source                = "../dns"
   custom_stack_name     = local.custom_stack_name
   app_name              = "backend"
-  alb_dns               = var.backend_alb_dns
-  canonical_hosted_zone = var.backend_alb_zone
-  zone                  = var.zone
+  alb_dns               = local.backend_alb_dns
+  canonical_hosted_zone = local.backend_alb_zone
+  zone                  = local.internal_dns
 }
 
 module frontend_service {
@@ -82,10 +83,10 @@ module frontend_service {
   service_port      = 9000
   deployment_stage  = local.deployment_stage
   step_function_arn = module.upload_sfn.step_function_arn
-  host_match        = join(".", [module.frontend_dns.dns_prefix, local.external_dns])
+  host_match        = join(".", [module.frontend_dns[0].dns_prefix, local.external_dns])
   priority          = local.priority
-  api_url           = join("", ["https://", module.backend_dns.dns_prefix, ".", local.external_dns])
-  frontend_url      = join("", ["https://", module.frontend_dns.dns_prefix, ".", local.external_dns])
+  api_url           = join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns])
+  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
 }
 
 module backend_service {
@@ -104,10 +105,10 @@ module backend_service {
   cmd               = local.backend_cmd
   deployment_stage  = local.deployment_stage
   step_function_arn = module.upload_sfn.step_function_arn
-  host_match        = join(".", [module.backend_dns.dns_prefix, local.external_dns])
+  host_match        = join(".", [module.backend_dns[0].dns_prefix, local.external_dns])
   priority          = local.priority
-  api_url           = join("", ["https://", module.backend_dns.dns_prefix, ".", local.external_dns])
-  frontend_url      = join("", ["https://", module.frontend_dns.dns_prefix, ".", local.external_dns])
+  api_url           = join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns])
+  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
 }
 
 module migrate_db {
@@ -139,7 +140,7 @@ module upload_batch {
   deployment_stage  = local.deployment_stage
   artifact_bucket   = local.artifact_bucket
   cellxgene_bucket  = local.cellxgene_bucket
-  frontend_url      = join("", ["https://", module.frontend_dns.dns_prefix, ".", local.external_dns])
+  frontend_url      = join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns])
 }
 
 module upload_lambda {

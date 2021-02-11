@@ -15,8 +15,8 @@ resource aws_ecs_service service {
     target_group_arn = aws_lb_target_group.target_group.id
   }
   network_configuration {
-    security_groups  = split(",", var.security_groups)
-    subnets          = split(",", var.subnets)
+    security_groups  = var.security_groups
+    subnets          = var.subnets
     assign_public_ip = false
   }
 }
@@ -74,7 +74,7 @@ resource aws_ecs_task_definition task_definition {
         "awslogs-region": "${data.aws_region.current.name}"
       }
     },
-    "command": ${jsonencode(!(var.cmd == "") ? split(",", var.cmd) : null)}
+    "command": ${jsonencode((length(var.cmd) == 0) ? null : var.cmd)}
   }
 ]
 EOF

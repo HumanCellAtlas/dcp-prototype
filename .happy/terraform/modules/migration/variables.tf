@@ -9,9 +9,9 @@ variable task_role_arn {
 }
 
 variable cmd {
-  type        = string
+  type        = list(string)
   description = "Command to run"
-  default     = ""
+  default     = []
 }
 
 variable custom_stack_name {

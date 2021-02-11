@@ -36,7 +36,7 @@ resource aws_ecs_task_definition task_definition {
         "awslogs-region": "${data.aws_region.current.name}"
       }
     },
-    "command": ${jsonencode(split(",", var.cmd))}
+    "command": ${jsonencode(var.cmd)}
   }
 ]
 EOF

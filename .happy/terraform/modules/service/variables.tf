@@ -46,12 +46,12 @@ variable host_match {
 }
 
 variable security_groups {
-  type        = string
+  type        = list(string)
   description = "Security groups for ECS tasks"
 }
 
 variable subnets {
-  type        = string
+  type        = list(string)
   description = "Subnets for ecs tasks"
 }
 
@@ -67,9 +67,9 @@ variable path {
 }
 
 variable cmd {
-  type        = string
+  type        = list(string)
   description = "The path to register with the Application Load Balancer"
-  default     = ""
+  default     = []
 }
 
 variable api_url {
