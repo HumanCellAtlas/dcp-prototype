@@ -20,7 +20,7 @@ locals {
   data_load_path        = "s3://${local.secret["s3_buckets"]["env"]["name"]}/database/dev_data.sql"
 
   vpc_id                = local.secret["vpc_id"]
-  subnets               = var.require_okta ? local.secret["private_subnets"] : local.secret["public_subnets"]
+  subnets               = local.secret["private_subnets"]
   security_groups       = local.secret["security_groups"]
   zone                  = local.secret["zone_id"]
   cluster               = local.secret["cluster_arn"]
