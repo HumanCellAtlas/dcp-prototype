@@ -357,7 +357,6 @@ class StackMgr:
     def get_stack_workspace(self, stack_name):
         workspace_name = f"{self.config.env}-{stack_name}"
         tfe_api = self.get_tfe_api()
-        print(workspace_name)
         return tfe_api.get_workspace(workspace_name)
 
 
@@ -723,7 +722,7 @@ class Orchestrator:
             taskDefinition=taskdef_arn,
             networkConfiguration={
                 "awsvpcConfiguration": {
-                    "subnets": subnets.split(","),
+                    "subnets": subnets,
                     "securityGroups": security_groups.split(","),
                     "assignPublicIp": "DISABLED",
                 }
@@ -978,8 +977,15 @@ def delete(ctx, stack_name):
     except Exception:
         raise CliError(f"Stack {stack_name} doesn't exist in our list")
 
-    print(f"deleting {stack_name}")
+    # Make sure this environment allows stack deletion.
+    try:
+        delete_protected = ctx.obj["config"].delete_protected
+        if delete_protected:
+            raise CliError("This stack cannot be deleted")
+    except KeyError:
+        pass
 
+    print(f"deleting {stack_name}")
     try:
         run_tasks(ctx, stack, "delete", wait=False, show_logs=False)
         print(f"Database dropped")
