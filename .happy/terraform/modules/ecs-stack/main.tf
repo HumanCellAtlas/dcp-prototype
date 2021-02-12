@@ -14,8 +14,8 @@ locals {
   deployment_stage      = var.deployment_stage
   remote_dev_prefix     = var.stack_prefix
 
-  migration_cmd         = ["make", "-C", "/corpora-data-portal/backend,db/init_remote_dev"]
-  deletion_cmd          = ["make", "-C", "/corpora-data-portal/backend,db/delete_remote_dev"]
+  migration_cmd         = ["make", "-C", "/corpora-data-portal/backend", "db/init_remote_dev"]
+  deletion_cmd          = ["make", "-C", "/corpora-data-portal/backend", "db/delete_remote_dev"]
   frontend_cmd          = []
   backend_cmd           = ["python3", "/chalice/run_local_server.py", "--host", "0.0.0.0"]
   data_load_path        = "s3://${local.secret["s3_buckets"]["env"]["name"]}/database/dev_data.sql"

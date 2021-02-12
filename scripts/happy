@@ -15,6 +15,7 @@ import time
 from urllib.parse import urlparse
 
 import boto3
+from botocore.exceptions import WaiterError
 from botocore.config import Config
 import click
 from terrasnek.api import TFC
@@ -723,7 +724,7 @@ class Orchestrator:
             networkConfiguration={
                 "awsvpcConfiguration": {
                     "subnets": subnets,
-                    "securityGroups": security_groups.split(","),
+                    "securityGroups": security_groups,
                     "assignPublicIp": "DISABLED",
                 }
             },
@@ -735,7 +736,10 @@ class Orchestrator:
 
         # Wait for the task to start.
         waiter = ecs_client.get_waiter("tasks_running")
-        waiter.wait(cluster=cluster_arn, tasks=[task_info["taskArn"]])
+        try:
+            waiter.wait(cluster=cluster_arn, tasks=[task_info["taskArn"]])
+        except WaiterError:
+            print("Task failed!")
         result = ecs_client.describe_tasks(cluster=cluster_arn, tasks=[task_info["taskArn"]])
         container = result["tasks"][0]["containers"][0]
         status = container["lastStatus"]
@@ -744,13 +748,12 @@ class Orchestrator:
             if "reason" in container:
                 reason = container["reason"]
             print(f"Container did not start. Current status {status}: {reason}")
-            return
-        print(f"Task {task_info['taskArn']} running")
-
-        # Wait for the task to exit.
-        waiter = ecs_client.get_waiter("tasks_stopped")
-        waiter.wait(cluster=cluster_arn, tasks=[task_info["taskArn"]])
-        print(f"Task {task_info['taskArn']} stopped")
+        else:
+            print(f"Task {task_info['taskArn']} running")
+            # Wait for the task to exit.
+            waiter = ecs_client.get_waiter("tasks_stopped")
+            waiter.wait(cluster=cluster_arn, tasks=[task_info["taskArn"]])
+            print(f"Task {task_info['taskArn']} stopped")
         result = ecs_client.describe_tasks(cluster=cluster_arn, tasks=[task_info["taskArn"]])
         container = result["tasks"][0]["containers"][0]
         log_stream = container["runtimeId"]
