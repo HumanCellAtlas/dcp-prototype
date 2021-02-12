@@ -905,9 +905,18 @@ def create(ctx, stack_name, tag, wait, force):
     success = stack.apply(wait)
     if not success:
         raise CliError("Apply failed, skipping migrations")
-    ctx.invoke(migrate, stack_name=stack_name)
+    if should_auto_migrate(ctx):
+        ctx.invoke(migrate, stack_name=stack_name)
     stack.print_outputs()
 
+def should_auto_migrate(ctx):
+    # Make sure this environment allows automatically running migrations on update
+    try:
+        migrate_ok = ctx.obj["config"].auto_run_migrations
+        return migrate_ok
+    except KeyError:
+        # The default behavior is to auto-migrate on update.
+        return True
 
 @contextmanager
 def config_tarball(source_dir):
@@ -948,7 +957,7 @@ def update(ctx, stack_name, tag, wait, skip_migrations):
     success = stack.apply(wait or not skip_migrations)
     if not success:
         raise CliError("Apply failed, skipping migrations")
-    if not skip_migrations:
+    if not skip_migrations and should_auto_migrate(ctx):
         ctx.invoke(migrate, stack_name=stack_name)
     stack.print_outputs()
 

@@ -13,7 +13,8 @@
             "aws_profile": "single-cell-dev",
             "secret_arn": "happy/env-stage-config",
             "terraform_directory": ".happy/terraform/envs/stage",
-            "delete_protected": true
+            "delete_protected": true,
+            "auto_run_migrations": false
         }
     },
     "tasks": {
