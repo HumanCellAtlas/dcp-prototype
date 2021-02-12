@@ -47,8 +47,8 @@ locals {
   sfn_role_arn          = local.secret["service_roles"]["sfn_upload"]
   lambda_execution_role = local.secret["service_roles"]["lambda_errorhandler"]
 
-  frontend_url = try(join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns]), "")
-  backend_url  = try(join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns]), "")
+  frontend_url = try(join("", ["https://", module.frontend_dns[0].dns_prefix, ".", local.external_dns]), var.frontend_url)
+  backend_url  = try(join("", ["https://", module.backend_dns[0].dns_prefix, ".", local.external_dns]), var.backend_url)
 }
 
 module frontend_dns {

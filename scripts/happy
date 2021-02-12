@@ -1121,7 +1121,7 @@ if __name__ == "__main__":
         cli.main(obj=obj)
     except exceptions.TFCHTTPUnauthorized as err:
         print(
-            f"Not authorized to access TFE. Try going to {obj['secret_mgr'].secrets['tfe_url']} in your browser then rerunning your command."
+            f"Not authorized to access TFE. Try going to {obj['secret_mgr'].secrets['tfe']['url']} in your browser then rerunning your command."
         )
     except CliError as err:
         print(f"ERROR: {err}")

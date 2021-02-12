@@ -51,3 +51,15 @@ variable require_okta {
   description = "Whether the ALB's should be on private subnets"
   default     = true
 }
+
+variable backend_url {
+  type        = string
+  description = "For non-proxied stacks, send in the canonical front/backend URL's"
+  default     = ""
+}
+
+variable frontend_url {
+  type        = string
+  description = "For non-proxied stacks, send in the canonical front/backend URL's"
+  default     = ""
+}
