@@ -8,6 +8,12 @@ variable custom_stack_name {
   description = "Please provide the stack name"
 }
 
+variable remote_dev_prefix {
+  type        = string
+  description = "S3 storage path / db schema prefix"
+  default     = ""
+}
+
 variable app_name {
   type        = string
   description = "Please provide the ECS service name"

@@ -63,3 +63,9 @@ variable frontend_url {
   description = "For non-proxied stacks, send in the canonical front/backend URL's"
   default     = ""
 }
+
+variable stack_prefix {
+  type        = string
+  description = "Do bucket storage paths and db schemas need to be prefixed with the stack name? (Usually '/{stack_name}' for dev stacks, and '' for staging/prod stacks)"
+  default     = ""
+}

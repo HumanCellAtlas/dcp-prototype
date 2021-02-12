@@ -10,4 +10,5 @@ module stack {
   deployment_stage    = "rdev"
   delete_protected    = false
   require_okta        = true
+  stack_prefix        = "/${var.stack_name}"
 }

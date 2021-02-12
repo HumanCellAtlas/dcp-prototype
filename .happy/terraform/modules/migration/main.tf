@@ -24,7 +24,7 @@ resource aws_ecs_task_definition task_definition {
       },
       {
         "name": "REMOTE_DEV_PREFIX",
-        "value": "/${var.custom_stack_name}"
+        "value": "${var.remote_dev_prefix}"
       },
       {
         "name": "DATA_LOAD_PATH",

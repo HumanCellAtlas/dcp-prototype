@@ -19,6 +19,12 @@ variable custom_stack_name {
   description = "Please provide the stack name"
 }
 
+variable remote_dev_prefix {
+  type        = string
+  description = "S3 storage path / db schema prefix"
+  default     = ""
+}
+
 variable data_load_path {
   type        = string
   description = "S3 location to pull sql file from to load dev db data"

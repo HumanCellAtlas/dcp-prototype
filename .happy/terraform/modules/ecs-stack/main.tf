@@ -12,6 +12,7 @@ locals {
   image_tag             = var.image_tag
   priority              = var.priority
   deployment_stage      = var.deployment_stage
+  remote_dev_prefix     = var.stack_prefix
 
   migration_cmd         = ["make", "-C", "/corpora-data-portal/backend,db/init_remote_dev"]
   deletion_cmd          = ["make", "-C", "/corpora-data-portal/backend,db/delete_remote_dev"]
@@ -120,6 +121,7 @@ module migrate_db {
   task_role_arn     = local.ecs_role_arn
   cmd               = local.migration_cmd
   custom_stack_name = local.custom_stack_name
+  remote_dev_prefix = local.remote_dev_prefix
   deployment_stage  = local.deployment_stage
   data_load_path    = local.data_load_path
 }
@@ -131,6 +133,7 @@ module delete_db {
   task_role_arn     = local.ecs_role_arn
   cmd               = local.deletion_cmd
   custom_stack_name = local.custom_stack_name
+  remote_dev_prefix = local.remote_dev_prefix
   deployment_stage  = local.deployment_stage
 }
 
@@ -140,6 +143,7 @@ module upload_batch {
   batch_role_arn    = local.batch_role_arn
   cmd               = ""
   custom_stack_name = local.custom_stack_name
+  remote_dev_prefix = local.remote_dev_prefix
   deployment_stage  = local.deployment_stage
   artifact_bucket   = local.artifact_bucket
   cellxgene_bucket  = local.cellxgene_bucket
@@ -150,6 +154,7 @@ module upload_lambda {
   source                = "../lambda"
   image                 = "${local.lambda_upload_repo}:${local.image_tag}"
   custom_stack_name     = local.custom_stack_name
+  remote_dev_prefix     = local.remote_dev_prefix
   deployment_stage      = local.deployment_stage
   artifact_bucket       = local.artifact_bucket
   cellxgene_bucket      = local.cellxgene_bucket
