@@ -22,7 +22,7 @@ resource aws_ecs_service service {
 }
 
 resource aws_ecs_task_definition task_definition {
-  family        = "${var.custom_stack_name}-${var.app_name}"
+  family        = "dp-${var.deployment_stage}-${var.custom_stack_name}-${var.app_name}"
   network_mode  = "awsvpc"
   task_role_arn = var.task_role_arn
   container_definitions = <<EOF

@@ -91,6 +91,7 @@ module frontend_service {
   priority          = local.priority
   api_url           = local.backend_url
   frontend_url      = local.frontend_url
+  remote_dev_prefix = local.remote_dev_prefix
 }
 
 module backend_service {
@@ -113,6 +114,7 @@ module backend_service {
   priority          = local.priority
   api_url           = local.backend_url
   frontend_url      = local.frontend_url
+  remote_dev_prefix = local.remote_dev_prefix
 }
 
 module migrate_db {

@@ -1,7 +1,7 @@
 data aws_region current {}
 
 resource aws_ecs_task_definition task_definition {
-  family        = "${var.custom_stack_name}-deletion"
+  family        = "dp-${var.deployment_stage}-${var.custom_stack_name}-deletion"
   network_mode  = "awsvpc"
   task_role_arn = var.task_role_arn
   container_definitions = <<EOF

@@ -3,7 +3,7 @@
 data aws_region current {}
 
 resource aws_ecs_task_definition task_definition {
-  family        = "${var.custom_stack_name}-migration"
+  family        = "dp-${var.deployment_stage}-${var.custom_stack_name}-migration"
   network_mode  = "awsvpc"
   task_role_arn = var.task_role_arn
   container_definitions = <<EOF
