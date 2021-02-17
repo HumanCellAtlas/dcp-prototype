@@ -16,6 +16,8 @@ well-labeled repository of interoperable datasets.
 ### Development quickstart
 See [DEV_ENV.md](DEV_ENV.md) for the local development guide.
 
+See [REMOTE_DEV.md](REMOTE_DEV.md) for personal remote deployment guide.
+
 ### Pre-requisites
 
 1. [Install and configure awscli](docs/awscli.md)
@@ -44,6 +46,9 @@ See [DEV_ENV.md](DEV_ENV.md) for the local development guide.
 1. [Deploy Backend](backend/chalice/api_server/README.md#Deploy)
 1. [Deploy Cloudfront-invalidator](backend/chalice/cloudfront_invalidator/README.md#Deploy)
 1. [Deploy Frontend](frontend/README.md#Deployment)
+
+### Database Procedures
+see [Data Portal Database Procedures](backend/database/README.md)
 
 ### Running unittests
 
