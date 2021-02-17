@@ -1109,6 +1109,8 @@ def push(ctx, images, tag, extra_tag, compose_env):
     builder_config = {}
     if compose_env:
         builder_config["env"] = compose_env
+    elif os.path.isfile(config.default_compose_env):
+        builder_config["env"] = config.default_compose_env
     builder_config["ecr_repo"] = first_registry  # TODO this is a leak in our abstraction, need to fix.
     builder = ArtifactBuilder(builder_config)
     artifacts = builder.build(images)
