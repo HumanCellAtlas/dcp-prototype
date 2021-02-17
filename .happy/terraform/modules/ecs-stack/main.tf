@@ -7,6 +7,7 @@ data aws_secretsmanager_secret_version config {
 
 locals {
   secret = jsondecode(data.aws_secretsmanager_secret_version.config.secret_string)
+  alb_key = var.require_okta ? "private_albs" : "public_albs"
 
   custom_stack_name     = var.stack_name
   image_tag             = var.image_tag
@@ -34,12 +35,12 @@ locals {
   external_dns          = local.secret["external_zone_name"]
   internal_dns          = local.secret["internal_zone_name"]
 
-  frontend_listener_arn = try(local.secret["alb_listeners"]["frontend"]["arn"], "")
-  backend_listener_arn  = try(local.secret["alb_listeners"]["backend"]["arn"], "")
-  frontend_alb_zone     = try(local.secret["albs"]["frontend"]["zone_id"], "")
-  backend_alb_zone      = try(local.secret["albs"]["backend"]["zone_id"], "")
-  frontend_alb_dns      = try(local.secret["albs"]["frontend"]["dns_name"], "")
-  backend_alb_dns       = try(local.secret["albs"]["backend"]["dns_name"], "")
+  frontend_listener_arn = try(local.secret[local.alb_key]["frontend"]["listener_arn"], "")
+  backend_listener_arn  = try(local.secret[local.alb_key]["backend"]["listener_arn"], "")
+  frontend_alb_zone     = try(local.secret[local.alb_key]["frontend"]["zone_id"], "")
+  backend_alb_zone      = try(local.secret[local.alb_key]["backend"]["zone_id"], "")
+  frontend_alb_dns      = try(local.secret[local.alb_key]["frontend"]["dns_name"], "")
+  backend_alb_dns       = try(local.secret[local.alb_key]["backend"]["dns_name"], "")
 
   artifact_bucket       = try(local.secret["s3_buckets"]["artifacts"]["name"], "")
   cellxgene_bucket      = try(local.secret["s3_buckets"]["cellxgene"]["name"], "")
