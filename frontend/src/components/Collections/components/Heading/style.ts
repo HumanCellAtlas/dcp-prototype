@@ -22,11 +22,9 @@ export const Name = styled.div`
   max-width: 620px;
 `;
 
-export const QuestionMark = styled.img`
+export const QuestionMarkWrapper = styled.span`
   position: relative;
   cursor: pointer;
-  width: 15px;
-  height: 15px;
-  top: 3px;
-  left: 5px;
+  top: 1.5px;
+  left: 4px;
 `;

@@ -9,7 +9,7 @@ interface Props {
 }
 
 const Collection: FC<Props> = ({ id, visibility }) => {
-  const { data: collection } = useCollection(id, visibility);
+  const { data: collection } = useCollection({ id, visibility });
 
   if (!collection?.datasets) return null;
 
