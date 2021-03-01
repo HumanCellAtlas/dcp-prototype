@@ -1,4 +1,5 @@
 import { H1, Text } from "@blueprintjs/core";
+import Head from "next/head";
 import React, { FC } from "react";
 import { ACCESS_TYPE } from "src/common/entities";
 import { useCollections } from "src/common/queries/collections";
@@ -12,17 +13,22 @@ const MyCollections: FC = () => {
   if (!collections) return null;
 
   return (
-    <ViewGrid>
-      <TitleAndDescription>
-        <H1>My Collections</H1>
-        <Text>A list of collections you have created</Text>
-      </TitleAndDescription>
-      <StyledCreateCollection />
-      <CollectionsGrid
-        collections={collections}
-        accessType={ACCESS_TYPE.WRITE}
-      />
-    </ViewGrid>
+    <>
+      <Head>
+        <title>cellxgene | My Collections</title>
+      </Head>
+      <ViewGrid>
+        <TitleAndDescription>
+          <H1>My Collections</H1>
+          <Text>A list of collections you have created</Text>
+        </TitleAndDescription>
+        <StyledCreateCollection />
+        <CollectionsGrid
+          collections={collections}
+          accessType={ACCESS_TYPE.WRITE}
+        />
+      </ViewGrid>
+    </>
   );
 };
 

@@ -1,7 +1,8 @@
 import { H3, Intent } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
-import { RouteComponentProps } from "@reach/router";
-import { memoize } from "lodash-es";
+import memoize from "lodash/memoize";
+import Head from "next/head";
+import { useRouter } from "next/router";
 import React, { FC, useState } from "react";
 import { useQueryCache } from "react-query";
 import { ACCESS_TYPE, Dataset, VISIBILITY_TYPE } from "src/common/entities";
@@ -27,14 +28,20 @@ import {
 } from "./style";
 import { getIsPublishable, renderLinks } from "./utils";
 
-interface RouteProps {
-  id?: string;
-}
+const Collection: FC = () => {
+  const router = useRouter();
 
-export type Props = RouteComponentProps<RouteProps>;
+  const { params } = router.query;
 
-const Collection: FC<Props> = ({ id = "" }) => {
-  const isPrivate = window.location.pathname.includes("/private");
+  let id = "";
+  let isPrivate = false;
+
+  if (Array.isArray(params)) {
+    id = params[0];
+    isPrivate = params[1] === "private";
+  } else if (params) {
+    id = params;
+  }
 
   const visibility = isPrivate
     ? VISIBILITY_TYPE.PRIVATE
@@ -46,7 +53,7 @@ const Collection: FC<Props> = ({ id = "" }) => {
 
   const queryCache = useQueryCache();
 
-  const { data: collection, isError } = useCollection(id, visibility);
+  const { data: collection, isError } = useCollection({ id, visibility });
 
   const [uploadLink] = useCollectionUploadLinks(id, visibility);
 
@@ -91,42 +98,50 @@ const Collection: FC<Props> = ({ id = "" }) => {
   );
 
   return (
-    <ViewGrid>
-      <CollectionInfo>
-        <H3>{collection.name}</H3>
-        <Description>{collection.description}</Description>
-        <LinkContainer>{renderLinks(collection.links)}</LinkContainer>
-      </CollectionInfo>
+    <>
+      <Head>
+        <title>cellxgene | {collection.name}</title>
+      </Head>
+      <ViewGrid>
+        <CollectionInfo>
+          <H3>{collection.name}</H3>
+          <Description>{collection.description}</Description>
+          <LinkContainer>{renderLinks(collection.links)}</LinkContainer>
+        </CollectionInfo>
 
-      <CollectionButtons>
-        {collection.access_type === ACCESS_TYPE.WRITE && isPrivate && (
-          <DeleteCollection id={id} />
-        )}
-        {isPrivate && (
-          <PublishCollection isPublishable={isPublishable} id={id} />
-        )}
-      </CollectionButtons>
-      <DatasetContainer>
-        {isDatasetPresent ? (
-          <DatasetsGrid
-            datasets={datasets}
-            uploadedFiles={uploadedFiles}
-            invalidateCollectionQuery={invalidateCollectionQuery}
-            onSelect={setSelected}
+        <CollectionButtons>
+          {collection.access_type === ACCESS_TYPE.WRITE && isPrivate && (
+            <DeleteCollection id={id} />
+          )}
+
+          {isPrivate && (
+            <PublishCollection isPublishable={isPublishable} id={id} />
+          )}
+        </CollectionButtons>
+
+        <DatasetContainer>
+          {isDatasetPresent ? (
+            <DatasetsGrid
+              datasets={datasets}
+              uploadedFiles={uploadedFiles}
+              invalidateCollectionQuery={invalidateCollectionQuery}
+              onSelect={setSelected}
+            />
+          ) : (
+            <EmptyDatasets onUploadFile={addNewFile} />
+          )}
+        </DatasetContainer>
+
+        {isDatasetPresent && (
+          <ActionButtons
+            collectionId={collection?.id}
+            selectedDatasetId={selected}
+            visibility={visibility}
+            addNewFile={addNewFile}
           />
-        ) : (
-          <EmptyDatasets onUploadFile={addNewFile} />
         )}
-      </DatasetContainer>
-      {isDatasetPresent && (
-        <ActionButtons
-          collectionId={collection?.id}
-          selectedDatasetId={selected}
-          visibility={visibility}
-          addNewFile={addNewFile}
-        />
-      )}
-    </ViewGrid>
+      </ViewGrid>
+    </>
   );
 };
 
