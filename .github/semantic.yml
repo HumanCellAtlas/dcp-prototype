@@ -1,0 +1,25 @@
+# Config for https://github.com/zeke/semantic-pull-requests
+# Only validates against PR titles
+titleOnly: true
+# Ignore individual commits in the PR
+commitsOnly: false
+# Option to look at both
+titleAndCommits: false
+# All types specified in commitizen/conventional-commit-types
+types:
+  - feat
+  - fix
+  - docs
+  - style
+  - refactor
+  - perf
+  - test
+  - build
+  - ci
+  - chore
+  - revert
+# We can restrict scopes to an explicit list if wanted
+# scopes:
+# Only applicable if commits are enabled
+# allowMergeCommits: true
+# allowRevertCommits: true
