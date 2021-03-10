@@ -21,7 +21,9 @@ fi
 
 # Build and run without dev mode in remote dev env.
 if [ "${DEPLOYMENT_STAGE}" == "dev" ]; then
+  echo "Running dev service"
   exec npm run dev
 else
+  echo "Running prod build"
   exec npm run build-and-start-prod -p 9000
 fi

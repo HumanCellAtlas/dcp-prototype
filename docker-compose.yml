@@ -33,6 +33,8 @@ services:
         - "${DOCKER_REPO}corpora-frontend:branch-main"
       args:
         - BUILDKIT_INLINE_CACHE=1
+    environment:
+      - DEPLOYMENT_STAGE=dev
     restart: always
     depends_on:
       - backend
