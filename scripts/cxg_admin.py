@@ -6,13 +6,14 @@ import logging
 import os
 import sys
 
+
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
 
 from backend.corpora.common.corpora_config import CorporaDbConfig
 from backend.corpora.common.utils.json import CustomJSONEncoder
 from backend.corpora.common.utils.db_session import db_session_manager, DBSessionMaker
-from backend.corpora.common.entities.dataset import Dataset
+from backend.corpora.common.entities import Collection, Dataset
 
 from urllib.parse import urlparse
 
@@ -60,6 +61,39 @@ def delete_dataset(ctx, uuid):
                 exit(1)
         else:
             click.echo(f"Dataset:{uuid} not found!")
+            exit(0)
+
+
+@cli.command()
+@click.argument("uuid")
+@click.pass_context
+def get_dataset(ctx, uuid):
+    """Delete a dataset from Cellxgene. You must first SSH into the target deployment using `make db/tunnel` before
+    running."""
+
+    with db_session_manager() as session:
+        dataset = Dataset.get(session, uuid, include_tombstones=True)
+        if dataset is not None:
+            print(json.dumps(dataset.to_dict(), sort_keys=True, indent=2, cls=CustomJSONEncoder))
+        else:
+            click.echo(f"Dataset:{uuid} not found!")
+            exit(0)
+
+
+@cli.command()
+@click.argument("uuid")
+@click.option("--visibility", default="PUBLIC", type=click.Choice(["PUBLIC", "PRIVATE"], case_sensitive=False))
+@click.pass_context
+def get_collection(ctx, uuid: str, visibility: str):
+    """Delete a dataset from Cellxgene. You must first SSH into the target deployment using `make db/tunnel` before
+    running."""
+    visibility = visibility.upper()
+    with db_session_manager() as session:
+        collection = Collection.get_collection(session, uuid, visibility)
+        if collection is not None:
+            print(json.dumps(collection.to_dict(), sort_keys=True, indent=2, cls=CustomJSONEncoder))
+        else:
+            click.echo(f"Collection:{uuid} not found!")
             exit(0)
 
 
