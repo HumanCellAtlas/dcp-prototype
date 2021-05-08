@@ -19,6 +19,7 @@ from ..corpora_orm import (
     CollectionVisibility,
     generate_uuid,
 )
+from ..utils.db_session import clone
 from ..utils.s3_buckets import cxg_bucket
 from ..utils.db_session import clone
 
@@ -178,6 +179,7 @@ class Dataset(Entity):
             object_names = get_cxg_bucket_path(deployment_directory)
             logger.info(f"Deleting all files in bucket {cxg_bucket.name} under {object_names}.")
             cxg_bucket.objects.filter(Prefix=object_names).delete()
+            self.session.delete(deployment_directory)
 
     @staticmethod
     def new_processing_status() -> dict:
@@ -214,6 +216,32 @@ class Dataset(Entity):
             for gene in genesets:
                 writer.writerow(gene)
         return csv_file
+
+    def reprocess(self):
+        if not self.published:
+            self.asset_deletion()
+            self.deployment_directories_deletion()
+        for dd in self.deployment_directories:
+            self.session.delete(dd)
+        for af in self.artifacts:
+            self.session.delete(af)
+        db_object = clone(
+            self.db_object,
+            name="",
+            organism=None,
+            tissue=None,
+            assay=None,
+            disease=None,
+            sex=None,
+            ethnicity=None,
+            development_stage=None,
+            published=False,
+            revision=self.revision + 1,
+        )
+        self.session.add(db_object)
+        self.session.commit()
+        self.delete()
+        self.db_object = db_object
 
 
 def get_cxg_bucket_path(deployment_directory: DbDeploymentDirectory) -> str:
